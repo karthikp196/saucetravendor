@@ -65,21 +65,11 @@ class Route extends React.Component {
     {
  
         var usertoken = this.state.mobile_no;
-        alert(usertoken)
 
         return(
           <Provider store={store}>
             <NavigationContainer>
-             { usertoken == null ? (
-                <Stack.Navigator mode="modal" screenOptions={{ headerShown: false,}}>
-                  <>
-                      <Stack.Screen name="Login" component={Login} />
-                      <Stack.Screen name="Home" component={MyTabs} />  
-                      <Stack.Screen name="Otpscreen" component={Otpscreen} />   
-                      <Stack.Screen name="Processorder" component={Processorder} /> 
-                  </>
-                </Stack.Navigator>
-                ):
+            
                 <Stack.Navigator mode="modal" screenOptions={{ headerShown: false,}}>
                   <>
                       <Stack.Screen name="Home" component={MyTabs} /> 
@@ -88,7 +78,7 @@ class Route extends React.Component {
                       <Stack.Screen name="Processorder" component={Processorder} /> 
                   </> 
              </Stack.Navigator>
-            }
+            
             </NavigationContainer>
             </Provider>
 

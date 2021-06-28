@@ -33,15 +33,14 @@ class Orders extends Component {
             //Put your Data loading function here instead of my this.loadData()
         });
 
-        // if(value == null)
-        // {
-        //     alert("No value")
-        //     this.props.navigation.navigate('Login')
-        // }
-        // else
-        // {
-        //     alert("Value is there")
-        // }
+        if(value == null)
+        {
+            this.props.navigation.navigate('Login')
+        }
+        else
+        {
+            console.log("Value is there")
+        }
 
         // fetch('https://music-library-mcr-codes.herokuapp.com/artists',{
         //     method: 'GET',
@@ -135,6 +134,7 @@ class Orders extends Component {
 
 
     render(){
+
 
         const onRefresh = () =>
         {
