@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "376867960338",
+    "project_id": "saucetra-vendor",
+    "storage_bucket": "saucetra-vendor.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:376867960338:android:93fe3708e040ffd6104acb",
+        "android_client_info": {
+          "package_name": "com.saucetravendor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "376867960338-4n6tdahtlcv5hba9t1f5pm3copvhivak.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIEQIEq4IKs2--FpxaiFKKhwIMEKYe8-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "376867960338-4n6tdahtlcv5hba9t1f5pm3copvhivak.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
