@@ -19,11 +19,14 @@ class Otpscreen extends Component {
         this.setState({loading:true })
         try {
           const value = await AsyncStorage.getItem('mobile')
+          const firebasetoken = await AsyncStorage.getItem('firebase')
           var phone = value
           var token = this.state.token;
+          var firebase_token = firebasetoken;
           var dataObj = {}
           dataObj.mobile = phone,
           dataObj.otp = token,
+          dataObj.firebase_token = firebase_token
 
                  
         fetch('https://foody-database.herokuapp.com/api/vendorVerify',{

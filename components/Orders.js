@@ -8,6 +8,7 @@ const getData = async () => {
     try {
       const value = await AsyncStorage.getItem('mobile')
       console.log(value)
+      console.log(firebase)
       return value
     } catch(e) {
       // error reading value
@@ -23,6 +24,8 @@ class Orders extends Component {
     async componentDidMount()
     {
         const value = await AsyncStorage.getItem('mobile')
+        const firebase = await AsyncStorage.getItem('firebase')
+        console.log("token",firebase)
         this.setState({value:value})
         this.apicall()
         console.log(this.state.value)

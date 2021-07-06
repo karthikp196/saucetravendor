@@ -217,19 +217,6 @@ class Processorder extends Component {
 
                 
                     <View style={styles.notes}>
-
-                        <View style={{flex:1,flexDirection:'row',justifyContent:'space-around'}}>
-                          
-                            <TouchableOpacity>
-                                <Text style={{fontSize:20}} onPress={this.props.DecreaseCounter}>Decrease</Text>
-                            </TouchableOpacity>
-                            <Text style={{fontSize:20}}>{this.props.counter}</Text>
-                            <TouchableOpacity>
-                                <Text style={{fontSize:20}} onPress={this.props.IncreaseCounter}>Increase</Text>
-                            </TouchableOpacity>
-                           
-                        </View>
-
                         <View style={styles.statusview}>
                         <Text style={styles.statustext} > <Icon name="clock-check" size={26} color="#6BC04B" /> Order Status: {this.state.order_status}</Text>
                         </View>

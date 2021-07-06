@@ -3,6 +3,7 @@ import {Text , View} from 'react-native';
 import Route from './Route.js';
 import Firebase from '@react-native-firebase/app';
 import PushNotification from "react-native-push-notification";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class App extends Component {
   componentDidMount(){
@@ -12,13 +13,14 @@ class App extends Component {
       // (optional) Called when Token is generated (iOS and Android)
       onRegister: function (token) {
         console.log("TOKEN:", token);
+        StoreFirbaseToken(token.token)
       },
       // (required) Called when a remote is received or opened, or local notification is opened
       onNotification: function (notification) {
         console.log("NOTIFICATION:", notification);
         // process the notification
         // (required) Called when a remote is received or opened, or local notification is opened
-        notification.finish(PushNotificationIOS.FetchResult.NoData);
+        // notification.finish(PushNotificationIOS.FetchResult.NoData);
       },
       // (optional) Called when Registered Action is pressed and invokeApp is false, if true onNotification will be called (Android)
       onAction: function (notification) {
@@ -48,7 +50,16 @@ class App extends Component {
        */
       requestPermissions: true,
     });
+
+    const StoreFirbaseToken = async (token) => {
+      await AsyncStorage.setItem("firebase", token);
+      console.log("setting token",token)
+    }
+
   }
+
+
+
   render()
   {
     return(
