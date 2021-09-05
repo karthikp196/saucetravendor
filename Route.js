@@ -21,7 +21,7 @@ const TopTab = createMaterialTopTabNavigator();
 
 function MyTabs() {
     return (
-      <TopTab.Navigator tabBarOptions={{labelStyle:{fontFamily:'Nunito-Regular',color:'#999'} ,  } } >
+      <TopTab.Navigator tabBarOptions={{labelStyle:{fontFamily:'Nunito-Regular',color:'black',fontWeight:'bold'} ,  } } >
         <TopTab.Screen name='New Orders' component={Orders} />
         <TopTab.Screen name="Completed" component={Orderhistory} />
         <TopTab.Screen name="Inventory" component={Inventory} />
@@ -70,7 +70,7 @@ class Route extends React.Component {
           <Provider store={store}>
             <NavigationContainer>
             
-                <Stack.Navigator mode="modal" screenOptions={{ headerShown: false,}}>
+                <Stack.Navigator initialRouteName={Login} mode="modal" screenOptions={{ headerShown: false,}}>
                   <>
                       <Stack.Screen name="Home" component={MyTabs} /> 
                       <Stack.Screen name="Login" component={Login} /> 

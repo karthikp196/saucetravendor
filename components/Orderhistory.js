@@ -1,5 +1,5 @@
 import React , {Component} from 'react';
-import {Text , View , TextInput , StatusBar , ScrollView , RefreshControl , Image } from 'react-native';
+import {Text , View , TextInput , StatusBar , ScrollView , RefreshControl , Image,TouchableOpacity } from 'react-native';
 import { Card , Searchbar , Badge, Title , Paragraph , Button , List , Divider , ActivityIndicator } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -162,21 +162,25 @@ class Orderhistory extends Component {
                     <ActivityIndicator animating={this.state.loading} color={'blue'} />
                     {
                     this.state.orders.map((item,index) => (
-                        <View key={ index }>        
-                            <View style={styles.listview}>
-                                <View style={styles.orders}>
-                                    <Text style={styles.ordertext}>{item.order_id}</Text>
-                                    <Text>New</Text>
-                                    <Text>{item.date}</Text> 
-                                    <Text>{item.status}</Text> 
+                        <TouchableOpacity  onPress={() => this.props.navigation.navigate('Processorder',{order_id: item.order_id})}>
+                            <Card style={styles.cardstyle}>
+                            <View key={ index }>        
+                                <View style={styles.listview}>
+                                    <View style={styles.orders}>
+                                        <Text style={styles.ordertext}>{item.order_id}</Text>
                                     
+                                        <Text>{item.date}</Text> 
+                                    
+                                        
+                                    </View>
+                                    <View style={styles.actions}>
+                                        <Text style={styles.orderstatus}>{item.status}</Text> 
+                                    </View>
                                 </View>
-                                <View style={styles.actions}>
-                                    <Button icon="eye"  onPress={() => this.props.navigation.navigate('Processorder',{order_id: item.order_id})}>View</Button>
-                                </View>
+                                <Divider />
                             </View>
-                            <Divider />
-                        </View>
+                            </Card>
+                        </TouchableOpacity>
 
                     ))
                     }  
@@ -224,7 +228,7 @@ const styles ={
         flex:3,
     },
     actions:{
-        flex:1,
+        flex:2,
     },
     ordertext:{
         fontFamily: 'Nunito-Regular',
@@ -251,6 +255,19 @@ const styles ={
         fontSize:18,
         paddingHorizontal:5,
         fontFamily: 'Nunito-Regular',
+    },
+    orderstatus: {
+        backgroundColor:'#FD8019',
+        padding:5,
+        margin:3,
+        textAlign:'center',
+        color:'white'
+    },
+    cardstyle: {
+        marginTop:10,
+        marginBottom:10,
+        marginRight:2,
+        marginLeft:2,
     }
     
     

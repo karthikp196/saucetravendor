@@ -1,6 +1,6 @@
 import React , {Component} from 'react';
 import {Text , View , TextInput , StatusBar , ScrollView , RefreshControl , Image } from 'react-native';
-import { Card , Searchbar , Badge, Title , Paragraph , Button , List , Divider , ActivityIndicator,Switch } from 'react-native-paper';
+import { Card , Searchbar , Badge, Title , Paragraph , Button , List , Divider , ActivityIndicator,Switch ,Portal,Modal,Provider  } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -18,15 +18,14 @@ const getData = async () => {
 
 class Inventory extends Component {
 
-    state = {orders:[] , masterdata:[] ,dishstatus:true, name:['Hitesh','Raju'] , loading:true , refreshing:false , token:'' , value:'' , error:''};
+    state = {orders:[] ,restavailability:'',availvalue:true, token_res:'',availability:true, masterdata:[] ,modalvisible:false,modalhide:false, dishstatus:true, name:['Hitesh','Raju'] , loading:true , refreshing:false , token:'' , value:'' , error:''};
 
     async componentDidMount()
     {
         const value = await AsyncStorage.getItem('mobile')
         this.setState({value:value})
         this.apicall()
-        console.log(this.state.value)
-        
+        this.restaurantavail()
 
         this.focusListener = this.props.navigation.addListener('focus', () => {
             this.apicall();
@@ -43,28 +42,55 @@ class Inventory extends Component {
         //     alert("Value is there")
         // }
 
-        // fetch('https://music-library-mcr-codes.herokuapp.com/artists',{
-        //     method: 'GET',
-        //     header:{
-        //         'Accept': 'application/json',
-        //         'Content-Type': 'application/json'
-        //     },
-        //     })
-        //     .then((response) => response.json())
-        //     .then((res) => {
-
-        //         this.setState({orders:res , loading:false })
-        //         //alert(this.state.orders[0].title)
-        //         // alert(res[1].order_token)   
-        //     })
-        //     .catch(function(error) {
-        //     alert('There has been a problem with your fetch operation: ' + error.message);
-        //     console('There has been a problem with your fetch operation: ' + error.message);
-        //     // ADD THIS THROW error
-        //         throw error;
-        //     });
-        
+       
     }
+
+    async restaurantavail()
+    {
+        const rest = await AsyncStorage.getItem('restoken')
+        fetch('https://foody-database.herokuapp.com/api/rest-avalability',{
+        method: 'POST',
+        header:{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({"rest_token":rest})
+        })
+        .then((response) => response.json())
+        .then((res) => {
+
+            console.log(res)
+            this.setState({restavailability:res[0].status })
+            this.setState({token_res:rest})
+            var avail =this.state.restavailability
+            if(avail == "Active")
+            {
+                this.setState({availvalue:true})
+            }
+            else
+            {
+                this.setState({availvalue:false})
+            }
+            
+            // console.log(res)
+            // console.log(orders..status)
+            //this.setState({orders:res , loading:false , masterdata:res })
+            // // alert(res[1].order_token)   
+        })
+        .catch(function(error) {
+    
+        console('There has been a problem with your fetch operation: ' + error.message);
+        // ADD THIS THROW error
+            throw error;
+        });
+    }
+
+    async terms()
+    {
+
+
+    }
+
 
     async apicall() 
     {
@@ -112,7 +138,7 @@ class Inventory extends Component {
 
             console.log(this.state.value)
             const newData = this.state.orders.filter(item => {
-            const itemData = item.order_id.toLowerCase();
+            const itemData = item.name.toLowerCase();
             const textData = text.toLowerCase();
             return itemData.indexOf(textData) > -1;
             });
@@ -181,13 +207,74 @@ class Inventory extends Component {
             
         }
 
+        const restaurantchange = (id,status) => 
+        {   
+            var rest_token = id;
+            var status = status;
+            if(status == "Active")
+            {
+                var foodstatus = "Inactive";
+            }
+            else{
+                var foodstatus = "Active";
+            }
+             var dataObj = {}
+            dataObj.rest_token = rest_token,
+            dataObj.status = foodstatus,
+            console.log(rest_token)
+            console.log(status)
+            fetch('https://foody-database.herokuapp.com/api/rest-status',{
+                method: 'POST',
+                header:{
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dataObj)
+            })
+            .then((response) => response.json())
+            .then((res) => {
+                
+                if (res.is_error == 0)
+                {
+                  alert("Status Updated successfully")
+                  this.setState({loading:false })
+                  onRefresh() 
+                }
+                else
+                {
+                    // this.setState({visible:true})
+                    //alert("Invalid Credentials")
+                    alert(res.msg)
+                    this.setState({loading:false })
+                }
+               
+            })
+            .catch(function(error) {
+              alert('There has been a problem with your fetch operation: ' + error.message);
+               // ADD THIS THROW error
+                throw error;
+              });
+            
+        }
+
         const onRefresh = () =>
         {
             console.log("Refreshed")
             this.apicall()
+            this.restaurantavail()
             this.setState({error:''})
         }
     
+        const showModal = () =>
+        {
+            this.setState({modalvisible:true})
+        }
+
+        const hideModal = () =>
+        {
+            this.setState({modalvisible:false})
+            this.setState({modalhide:true})
+        }
         return(
             <View style={styles.container}>
 
@@ -200,6 +287,30 @@ class Inventory extends Component {
                     <Text style={styles.texts}><Icon name="refresh" size={18}></Icon> Scroll here ..</Text>
                 </View> : null 
                 }   
+
+             
+                            <View style={styles.listview}>
+                                <View style={styles.orders}>
+                                    <Text style={styles.ordertext}></Text>
+                                   
+                                    <Text style={styles.ordertext} >Restaurant Status</Text> 
+                                    
+                                </View>
+                                {this.state.restavailability == "Active" ?
+                                    <View style={styles.actions}>
+                                        <Switch value={this.state.availvalue} color="#040468" onValueChange={() => restaurantchange(this.state.token_res,this.state.restavailability)}  />
+                                    </View>:
+                                    <View style={styles.actions}>
+                                    <Switch value={this.state.availvalue} color="#040468" onValueChange={() => restaurantchange(this.state.token_res,this.state.restavailability)} />
+                                </View>
+                                 }
+                            </View>
+                            <Divider />
+
+                            <View>
+                            <Searchbar placeholder="Search" onChangeText={text => this.searchFilterFunction(text)} />
+                            </View>
+
 
                 <ScrollView refreshControl={
                     <RefreshControl refreshing={this.state.refreshing} onRefresh={onRefresh} />}>
@@ -230,7 +341,14 @@ class Inventory extends Component {
                     ))
                     }  
                 </ScrollView>
-                <Button icon="logout" onPress={this.logout}>Logout</Button>
+
+              
+                <View style={styles.txtterms}>
+                    <Button  mode="outlined" icon="logout" onPress={this.logout}>Logout</Button>
+                </View>
+
+              
+               
             </View>
         )
     }
@@ -243,6 +361,22 @@ const styles ={
         backgroundColor: '#FFF',
         paddingLeft:10,
         paddingRight:10
+    },
+    txtterms: {
+        margin:10,
+      
+    },
+    textterms: {
+        fontSize:16,
+        marginTop:6,
+        marginBottom:6,
+
+    },
+    containerStyle: {
+        backgroundColor: 'white', 
+        padding:20,
+        margin:20,
+        height:500
     },
     textAreaContainer: {
         borderColor: '#000',

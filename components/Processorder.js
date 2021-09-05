@@ -1,18 +1,41 @@
 import React , {Component} from 'react';
-import {Text , View  , ScrollView, StatusBar, FlatList,RefreshControl,TouchableOpacity } from 'react-native';
+import {Text , View  , ScrollView, StatusBar, FlatList,RefreshControl,TouchableOpacity,Linking, Platform, PermissionsAndroid, Alert} from 'react-native';
 import { ForceTouchGestureHandler } from 'react-native-gesture-handler';
-import { Title , Divider , Button, Paragraph , Headline , RadioButton,TextInput,ActivityIndicator } from 'react-native-paper';
+import { Title , Divider , Button,TextInput, Paragraph , Headline , RadioButton,ActivityIndicator ,Portal,Modal,Provider} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Picker} from '@react-native-picker/picker';
 import { HeaderStyleInterpolators } from '@react-navigation/stack';
 import { connect } from 'react-redux'
+import openMap from 'react-native-open-maps';
+import Geolocation from '@react-native-community/geolocation';
 
+export async function requestLocationPermission() 
+{
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      {
+        'title': 'Saucetra is trying to access your location...',
+        'message': 'Please switch on your GPS in the settings ',
+        'buttonPositive': 'OK',
 
-
-
+      }
+    )
+    if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      console.log("Please turn on the GPS in settings")
+    } else {
+      console.log("location permission denied")
+      
+    }
+  } catch (err) {
+    console.warn(err)
+  }
+}
+  
+  
 
 class Processorder extends Component {
-    state = {business:[] , food:[] ,error:'1', order_id:'' ,status_order:'', loading:false ,pageloading:false, user_id:'' ,user_name:'',totalprice:'',mobile:'',day:'', name:'' , price:'' , quantity:'' , total:'',created_at:'',order_status:'',address:'',landmark:'',pincode:''}
+    state = {business:[] , label:'',v_lat:'', v_long:'', u_lat:'',u_long:'', neighbourhood:'', food:[] ,foodprice:'',reason:'',modalvisible:false,modalhide:false,disablevalue:false ,error:'1', order_id:'' ,special_instructions:'',status_order:'', loading:false ,pageloading:false, user_id:'' ,user_name:'',totalprice:'',mobile:'',day:'', name:'' , price:'' , quantity:'' , total:'',created_at:'',order_status:'',address:'',landmark:'',pincode:''}
 
 
     async componentDidMount()
@@ -21,8 +44,21 @@ class Processorder extends Component {
         this.business_info()
         this.setState({processed:this.props.route.params.processed})
         this.food_items();
+        await requestLocationPermission()   
+
+        Geolocation.getCurrentPosition(
+            (pos) => {
+              this.setState({v_lat:pos.coords.latitude}) 
+              this.setState({v_long:pos.coords.longitude})
+              console.log(this.state.v_long)
+              console.log(this.state.v_lat)
+        })
+
+      
+
     }
 
+    
 
     async business_info() 
     {
@@ -39,7 +75,7 @@ class Processorder extends Component {
 
             //alert(res.results[0].email)
             console.log(res)
-            this.setState({user_id:res[0].user_id ,address:res[0].address,landmark:res[0].landmark,pincode:res[0].pincode, user_name: res[0].name , totalprice: res[0].price  ,mobile:res[0].mobile,day:res[0].date, loading:false , quantity:res[0].quantity, total:res[0].total, created_at:res[0].created_at,order_status:res[0].status })
+            this.setState({user_id:res[0].user_id ,special_instructions:res[0].special_instructions, address:res[0].address,landmark:res[0].landmark,pincode:res[0].pincode, user_name: res[0].name , totalprice: res[0].price  ,mobile:res[0].mobile,day:res[0].date, loading:false , quantity:res[0].quantity, total:res[0].total, created_at:res[0].created_at,order_status:res[0].status })
             // //alert(this.state.orders[0].title)
             // // alert(res[1].order_token)  
             
@@ -67,6 +103,8 @@ class Processorder extends Component {
             
             this.setState({food:res , loading:false })
             this.setState({error:'0' })
+            this.setState({foodprice:this.state.food[0]['price']})
+            console.log(this.state.foodprice)
             // //alert(this.state.orders[0].title)
             // // alert(res[1].order_token)   
         })
@@ -83,6 +121,8 @@ class Processorder extends Component {
 
     render(){
 
+
+
         const onRefresh = () =>
         {
             this.setState({order_token:this.props.route.params.order_id})
@@ -91,61 +131,145 @@ class Processorder extends Component {
             this.food_items();
             console.log('refreshed')
         }
+        
+
+      
+
+        const getLocation = () => {
+        
+            alert("hey")
+          }
+
+          const getuser = () => {
+        
+                const url = 'https://maps.google.com?saddr=Current+Location&daddr='+this.state.address+','+this.state.landmark+''
+                
+                Linking.openURL(url);
+           
+          }
+
+
+        const status1 = "Confirmed & Processing";
+        const status2 = "Packed & Out for Delivery";
+        const status3 = "Delivered";
+        const status4 = "Order Cancelled";
 
        
       
 
-        const updateorder = () => {
-            var order_id = this.props.route.params.order_id;
-            var orderstatus = this.state.status_order;
-            alert(this.state.order_status);
-            if(orderstatus == '')
+        const updateorder = (status) => {
+            if(status == "Order Cancelled")
             {
-                alert("Please choose a valid Order status")
-            }
-            else
-            {
-            this.setState({loading:true })
-            var dataObj = {}
-            dataObj.order_id = order_id,
-            dataObj.status = orderstatus,
-
-            fetch('https://foody-database.herokuapp.com/api/modify-status',{
-                method: 'POST',
-                header:{
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(dataObj)
-            })
-            .then((response) => response.json())
-            .then((res) => {
-                
-                if (res.is_error == 0)
+                var cancelreason = this.state.reason;
+                if (cancelreason == "")
                 {
-                  alert(res.msg)
-                  this.setState({loading:false })
-                  this.setState({status_order: orderstatus})
-                  onRefresh() 
+                    alert("Please Enter reason for cancellation");
                 }
                 else
                 {
-                    // this.setState({visible:true})
-                    //alert("Invalid Credentials")
-                    alert(res.msg)
-                    this.setState({loading:false })
+                    var order_id = this.props.route.params.order_id;
+                    this.setState({loading:true });
+                    this.setState({disablevalue:true })
+                    var dataObj = {}
+                    dataObj.order_id = order_id,
+                    dataObj.status = status,
+        
+                    fetch('https://foody-database.herokuapp.com/api/modify-status',{
+                        method: 'POST',
+                        header:{
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(dataObj)
+                    })
+                    .then((response) => response.json())
+                    .then((res) => {
+                        
+                        if (res.is_error == 0)
+                        {
+                        //   alert(res.msg)
+                          this.setState({loading:false })
+                          this.setState({status_order: status})
+                          onRefresh() 
+                          this.setState({disablevalue:false })
+                          this.setState({modalvisible:false})
+                        }
+                        else
+                        {
+                            // this.setState({visible:true})
+                            //alert("Invalid Credentials")
+                            alert(res.msg)
+                            this.setState({loading:false })
+                        }
+                       
+                    })
+                    .catch(function(error) {
+                      alert('There has been a problem with your fetch operation: ' + error.message);
+                       // ADD THIS THROW error
+                        throw error;
+                      });
+                   
                 }
-               
-            })
-            .catch(function(error) {
-              alert('There has been a problem with your fetch operation: ' + error.message);
-               // ADD THIS THROW error
-                throw error;
-              });
             }
+            else {
 
-            
+                var order_id = this.props.route.params.order_id;
+                this.setState({loading:true });
+                this.setState({disablevalue:true })
+                var dataObj = {}
+                dataObj.order_id = order_id,
+                dataObj.status = status,
+    
+                fetch('https://foody-database.herokuapp.com/api/modify-status',{
+                    method: 'POST',
+                    header:{
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataObj)
+                })
+                .then((response) => response.json())
+                .then((res) => {
+                    
+                    if (res.is_error == 0)
+                    {
+                    //   alert(res.msg)
+                      this.setState({loading:false })
+                      this.setState({status_order: status})
+                      onRefresh() 
+                      this.setState({disablevalue:false })
+                    }
+                    else
+                    {
+                        // this.setState({visible:true})
+                        //alert("Invalid Credentials")
+                        alert(res.msg)
+                        this.setState({loading:false })
+                    }
+                   
+                })
+                .catch(function(error) {
+                  alert('There has been a problem with your fetch operation: ' + error.message);
+                   // ADD THIS THROW error
+                    throw error;
+                  });
+               
+
+            }
+          
         }
+
+        const showModal = () =>
+        {
+            this.setState({modalvisible:true})
+        }
+
+        const hideModal = () =>
+        {
+            this.setState({modalvisible:false})
+            this.setState({modalhide:true})
+        }
+  
         
         return(
             <View style={styles.container}>
@@ -167,21 +291,34 @@ class Processorder extends Component {
                         </View>
                         <View style={styles.info} >
                             <Icon style={styles.icons} name="phone" size={24} color="#FFF" />
-                            <Text style={styles.text}>Mobile: { this.state.mobile }</Text>
+                            <Text   style={styles.text}>Mobile: { this.state.mobile }</Text> 
+                            <Button style={styles.iconbtn} uppercase={false} color="white" onPress={()=>{Linking.openURL('tel:{'+this.state.mobile+'}');}} icon="phone" mode="contained">
+                                Call
+                            </Button>
                         </View>
                         <View style={styles.info} >
                             <Icon style={styles.icons} name="currency-inr" size={24} color="#FFF" />
                             <Text style={styles.text}> Total Price: { this.state.totalprice } </Text>
+                        </View>
+
+                        <View style={styles.info} >
+                            <Icon style={styles.icons} name="calendar-edit" size={24} color="#FFF" />
+                            <Text style={styles.text}> Special Instructions: { this.state.special_instructions } </Text>
                         </View>
          
                         <View style={styles.info} >
                             <Icon style={styles.icons} name="calendar-multiple-check" size={24} color="#FFF" />
                             <Text style={styles.text}>Date: {this.state.day}</Text>
                         </View>
-
+                    
                         <View style={styles.info} >
                             <Icon style={styles.icons} name="map-marker-radius" size={24} color="#FFF" />
                             <Text style={styles.text}>Address: {this.state.address}, {this.state.landmark}, {this.state.pincode}</Text>
+                           
+                        </View>
+
+                        <View style={styles.btnvw}>
+                        <Button style={styles.iconbtn1} color="#fff"  icon="map-marker" uppercase={false} onPress={getuser} mode="contained">Open Google Maps</Button>
                         </View>
 
                     </View>
@@ -213,92 +350,52 @@ class Processorder extends Component {
 
                 </ScrollView>
 
-                    <Divider style={styles.divider}/>
+                  
 
-                
+                    <Provider>
+                        <Portal>
+                            <Modal  visible={this.state.modalvisible} onDismiss={hideModal} contentContainerStyle={styles.containerStyle}>
+                            <TextInput
+                            label="Reason for cancellation"
+                            mode="outlined"
+                            multiline={true}
+                            onChangeText={(value) => this.setState({reason: value})}
+                            />
+                            <Button style={styles.btncancel} icon="check"  onPress={() => updateorder(status4)} color="red"  mode="contained">
+                               Confirm
+                            </Button>
+                            </Modal>
+                        </Portal>
+                    </Provider>
+
                     <View style={styles.notes}>
                         <View style={styles.statusview}>
                         <Text style={styles.statustext} > <Icon name="clock-check" size={26} color="#6BC04B" /> Order Status: {this.state.order_status}</Text>
                         </View>
-                        {this.state.order_status == "" ?
-                        <View style={styles.dropdown}>
-                            <Picker style={styles.pickerstyle} onValueChange={(value) => this.setState({status_order: value})} >
-                                <Picker.Item label="Update status..." value="" />
-                                <Picker.Item label="Confirm Order" value="Confirmed" />
-                                <Picker.Item label="Packed" value="Processing Food" />
-                                <Picker.Item label="Out for Delivery" value="Out for Delivery" />
-                                <Picker.Item label="Delivered" value="Delivered" />
-                                <Picker.Item label="Cancel Order" value="Cancelled" />
-                            </Picker>   
-                        </View>:this.state.order_status == "Confirmed" ?
-                        <View style={styles.dropdown}>
-                            <Picker style={styles.pickerstyle} onValueChange={(value) => this.setState({status_order: value})} >
-                                <Picker.Item label="Update status..." value="" />
-                                <Picker.Item label="Packed" value="Processing Food" />
-                                <Picker.Item label="Out for Delivery" value="Out for Delivery" />
-                                <Picker.Item label="Delivered" value="Delivered" />
-                                <Picker.Item label="Cancel Order" value="Cancelled" />
-                            </Picker>   
-                        </View>:this.state.order_status == "Processing Food" ?
-                            <View style={styles.dropdown}>
-                            <Picker style={styles.pickerstyle} onValueChange={(value) => this.setState({status_order: value})} >
-                                <Picker.Item label="Update status..." value="" />
-                                <Picker.Item label="Out for Delivery" value="Out for Delivery" />
-                                <Picker.Item label="Delivered" value="Delivered" />
-                                <Picker.Item label="Cancel Order" value="Cancelled" />
-                            </Picker>   
-                            </View>:this.state.order_status == "Out for Delivery" ?
-                            <View style={styles.dropdown}>
-                                <Picker style={styles.pickerstyle} onValueChange={(value) => this.setState({status_order: value})} >
-                                    <Picker.Item label="Update status..." value="" />
-                                    <Picker.Item label="Delivered" value="Delivered" />
-                                    <Picker.Item label="Cancel Order" value="Cancelled" />
-                                </Picker>   
-                            </View>
-                        :this.state.order_status == "Delivered" ?
-                        <View style={styles.statusview}>
-                            <Text style={styles.statustext} > <Icon name="check-circle" size={30} color="#6BC04B" /> {this.state.order_status}</Text>
-                        </View>
-                       :this.state.order_status == "Cancelled" ?
-                       <View style={styles.statusview}>
-                           <Text style={styles.statustext} > <Icon name="close-circle" size={30} color="#900" /> Cancelled order</Text>
-                       </View>
-                      :
-                        
-                        <View style={styles.dropdown}>
-                        <Picker style={styles.pickerstyle} onValueChange={(value) => this.setState({status_order: value})} >
-                            <Picker.Item label="Update status..." value="" />
-                            <Picker.Item label="Confirm Order" value="Confirmed" />
-                            <Picker.Item label="Packed" value="Packed" />
-                            <Picker.Item label="Out for Delivery" value="Out for Delivery" />
-                            <Picker.Item label="Delivered" value="Delivered" />
-                            <Picker.Item label="Cancel Order" value="Cancelled" />
-                        </Picker>   
-                    </View>
-                    }
-                   { this.state.order_status == "Delivered" ?
+                        {this.state.order_status == "Placed" ?
                         <View>
-                           
+                            <Button style={styles.custombtn} mode="contained" loading={this.state.loading} onPress={() => updateorder(status1)} disabled={this.state.disablevalue}>Confirmed & Processing</Button>
+                            <Button style={styles.custombtn} color="red" mode="outlined" onPress={showModal}  >Cancel Order</Button>
+                        </View>:this.state.order_status == "Confirmed & Processing" ?
+                        <View>
+                             <Button style={styles.custombtn} mode="contained" loading={this.state.loading} onPress={() => updateorder(status2)} disabled={this.state.disablevalue} >Packed & Out for delivery</Button>
                         </View>
-                      :this.state.order_status == "Cancelled" ?
-                      <View>
-                         
-                      </View>
-                    :
-                      <View style={styles.btnview}>
-                        <Button icon="check" loading={this.state.loading} mode="outlined" onPress={updateorder}>Process Order</Button>
-                     </View>   
-                       
-                    }
-                       
-                        <Paragraph style={styles.para}>Note : All orders are timebound , hence quotations are expected in a timely manner.</Paragraph>
+                        :this.state.order_status == "Packed & Out for Delivery" ?
+                        <View>
+                             <Button style={styles.custombtn} mode="contained" loading={this.state.loading} onPress={() => updateorder(status3)} disabled={this.state.disablevalue} >Delivered</Button>
+                        </View>:this.state.order_status == "Delivered" ?
+                        <View>
+                        </View>:this.state.order_status == "Order Cancelled" ?
+                       <View style={styles.statusview}>
+                           <Text style={styles.statustext} > <Icon name="close-circle" size={30} color="#900"  /> Order Cancelled </Text>
+                       </View>:null
+                        
+                        }
+                        <Paragraph style={styles.para}></Paragraph>
                     </View>
-
-                      
-                    
-
                 </View>
-                
+            
+              
             </View>
         )
     }
@@ -311,10 +408,38 @@ const styles ={
         flex:1,
         backgroundColor: '#040468',
     },
+    btncancel: {
+        marginTop:10,
+    },
+    custombtn: {
+        margin:10,
+    },
+    containerStyle: {
+        backgroundColor: 'white', 
+        padding:20,
+        margin:20,
+        height:200,
+
+    },
+    providerstyle: {
+        position:'absolute'
+    },
     info:{
         flexDirection:'row',
         marginTop:10
 
+    },
+    iconbtn: {
+        position:'absolute',
+        right:0,
+        bottom:0
+    },
+    btnvw: {
+        margin:8
+    },
+    iconbtn1:
+    {
+       
     },
     topview:{
         flex:1,
@@ -323,7 +448,8 @@ const styles ={
         
     },
     bottomview:{
-        flex:2,
+        flex:1.8,
+        marginTop:10,
         padding:10,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
@@ -440,3 +566,5 @@ function MapDispatch(dispatch) {
 }
 
 export default connect(MapToprops,MapDispatch)(Processorder);
+
+

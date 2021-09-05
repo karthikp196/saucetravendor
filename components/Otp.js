@@ -44,6 +44,7 @@ class Otpscreen extends Component {
               {
                 var restoken = res.rest_token;
                 storeToken(restoken);
+                console.log(firebasetoken);
                 this.props.navigation.navigate('Home');
                 this.setState({loading:false })
               }
@@ -80,8 +81,6 @@ class Otpscreen extends Component {
           }
       }
 
-
-      
 
         const clicked = () =>
         {

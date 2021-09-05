@@ -1,6 +1,6 @@
 import React , {Component} from 'react';
-import {Text , View , StatusBar,ActivityIndicator  } from 'react-native';
-import { TextInput , Button , Title , Headline , Snackbar } from 'react-native-paper';
+import {Text , View , StatusBar,ActivityIndicator,ScrollView  } from 'react-native';
+import { TextInput , Button , Title , Headline , Snackbar , Divider ,  Switch ,Portal,Modal,Provider} from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { connect } from 'react-redux'
 
@@ -9,9 +9,87 @@ class Login extends Component {
 
   
     
-    state = {mobile:'' , visible:false,loading:false};
+    state = {mobile:'' ,terms:[], visible:false,loading:false, modalvisible:false,modalhide:false,};
+
+    async componentDidMount()
+    {
+        
+        fetch('https://foody-database.herokuapp.com/api/terms',{
+          method: 'POST',
+          header:{
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+          },
+          
+          })
+          .then((response) => response.json())
+          .then((res) => {
+
+              this.setState({terms:res })
+            
+          })
+          .catch(function(error) {
+          alert('There has been a problem with your fetch operation: ' + error.message);
+          console('There has been a problem with your fetch operation: ' + error.message);
+          // ADD THIS THROW error
+              throw error;
+          });
+
+          const value = await AsyncStorage.getItem('firebase')
+          console.log(value)
+          
+    }
+
+
+  
 
     render(){
+
+      const updatefb = async () => {
+        try {
+          var firebase_token = await AsyncStorage.getItem('firebase')
+          var mobile = this.state.mobile;
+          var dataObj = {}
+          dataObj.firebase_token = firebase_token
+          dataObj.mobile = mobile,
+       
+        fetch('https://foody-database.herokuapp.com/api/firebase-update',{
+          method: 'POST',
+          header:{
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dataObj)
+          })
+          .then((response) => response.json())
+          .then((res) => {
+              
+              if (res.is_error == 0)
+              {
+               
+                console.log(firebase_token);
+                console.log("firebase updated")
+              }
+              else
+              {
+                  // this.setState({visible:true})
+                  //alert("Invalid Credentials")
+                  alert(res.msg)
+                  this.setState({loading:false })
+              }
+          })
+          .catch(function(error) {
+            alert('There has been a problem with your fetch operation: ' + error.message);
+            // ADD THIS THROW error
+              throw error;
+            });
+          
+  
+        } catch(e) {
+          // error reading value
+        }
+      }
+    
       
         const login = () => {
             var mobile = this.state.mobile;
@@ -34,9 +112,9 @@ class Login extends Component {
                     {
                       // var vendor_id = res.id;
                       storeToken(mobile);
+                      updatefb();
                       this.props.navigation.navigate('Otpscreen');
-                      this.setState({loading:false })
-                      alert(res.msg)
+                      this.setState({loading:false }) 
                     }
                     else
                     {
@@ -47,7 +125,7 @@ class Login extends Component {
                     }
                 })
                 .catch(function(error) {
-                  alert('There has been a problem with your fetch operation: ' + error.message);
+                  console.log('There has been a problem with your fetch operation: ' + error.message);
                    // ADD THIS THROW error
                     throw error;
                   });
@@ -82,7 +160,16 @@ class Login extends Component {
             this.setState({visible:false})
           }
     
-         
+          const showModal = () =>
+          {
+              this.setState({modalvisible:true})
+          }
+  
+          const hideModal = () =>
+          {
+              this.setState({modalvisible:false})
+              this.setState({modalhide:true})
+          }
     
         
         return(
@@ -95,7 +182,7 @@ class Login extends Component {
             </View>
 
             <View style={styles.formview}>
-              <TextInput keyboardType={'numeric'} style={styles.inputs} label="MObile No" onChangeText={(value) => this.setState({mobile: value})}  mode="outlined" />
+              <TextInput keyboardType={'numeric'} style={styles.inputs} label="Mobile No" onChangeText={(value) => this.setState({mobile: value})}  mode="outlined" />
               <Button style={styles.buttons} mode="contained" loading={this.state.loading} onPress={login } >Login</Button>
             </View>
 
@@ -116,11 +203,37 @@ class Login extends Component {
 
             {/* <Button  mode="contained" onPress={() => this.props.navigation.navigate('Home') }>Orders</Button> */}
 
+
+
+         
+
               <View style={styles.footerview}>
-                <Text style={styles.footertext}>Terms & Conditions</Text>
+                <Text onPress={showModal} style={styles.footertext}>Terms & Conditions</Text>
               </View>
+
+              <Provider style={styles.providerstyle}>
+                    <Portal>
+                        <Modal visible={this.state.modalvisible} onDismiss={hideModal} contentContainerStyle={styles.containerStyle}>
+                            <ScrollView>
+                            {
+                             this.state.terms.map((item,index) => (
+                               <View key={ index }>
+                                  <Text style={styles.textterms}>
+                                    {item.terms}
+                                  </Text>
+                                  <Divider />
+                                </View> 
+                                ))
+                             }
+                            </ScrollView>
+                            
+                        </Modal>
+                    </Portal>
+                 
+                </Provider>
               
           </View>
+
         )
 
     }
@@ -134,6 +247,25 @@ const styles =
         flex:1,
         backgroundColor: '#040468',
     },
+    txtterms: {
+      margin:10,
+    
+  },
+  providerstyle: {
+    backgroundColor:'#fff',
+  },
+  textterms: {
+      fontSize:16,
+      marginTop:6,
+      marginBottom:6,
+
+  },
+  containerStyle: {
+      backgroundColor: 'white', 
+      padding:20,
+      margin:20,
+      height:500
+  },
     topview:{
       flex:2,
       paddingTop:40,

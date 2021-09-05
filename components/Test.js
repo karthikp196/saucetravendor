@@ -1,300 +1,274 @@
 import React , {Component} from 'react';
-import {Text , View  , ScrollView, StatusBar, FlatList,RefreshControl,Image } from 'react-native';
-import { ForceTouchGestureHandler } from 'react-native-gesture-handler';
-import { Title , Divider , Button, Paragraph , Headline , RadioButton,TextInput,ActivityIndicator,Switch  } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {Picker} from '@react-native-picker/picker';
-import { HeaderStyleInterpolators } from '@react-navigation/stack';
+import {Text , View , StatusBar,ActivityIndicator,ScrollView  } from 'react-native';
+import { TextInput , Button , Title , Headline , Snackbar , Divider ,  Switch ,Portal,Modal,Provider} from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { connect } from 'react-redux'
 
 
+class Login extends Component {
 
-
-
-class Inventory extends Component {
-    state = {business:[] ,dishstatus:true, food:[],orders:[] ,error:'1', order_id:'' ,status_order:'', loading:false ,pageloading:false, user_id:'' ,user_name:'',totalprice:'',mobile:'',day:'', name:'' , price:'' , quantity:'' , total:'',created_at:'',order_status:'',address:'',landmark:'',pincode:''}
-
-
+  
     
+    state = {mobile:'' ,terms:[], visible:false,loading:false, modalvisible:false,modalhide:false,};
+
     async componentDidMount()
     {
-        this.setState({order_token:this.props.route.params.order_id})
-        this.inventory_info()
-        this.setState({processed:this.props.route.params.processed})
-    }
+        
+        fetch('https://foody-database.herokuapp.com/api/terms',{
+          method: 'POST',
+          header:{
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+          },
+          
+          })
+          .then((response) => response.json())
+          .then((res) => {
 
-
-    async inventory_info() 
-    {
-        const value = await AsyncStorage.getItem('restoken')
-        const mobile = await AsyncStorage.getItem('mobile')
-        fetch('https://foody-database.herokuapp.com/api/rest-eats',{
-        method: 'POST',
-        header:{
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({"rest_token":value})
-        })
-        .then((response) => response.json())
-        .then((res) => {
-            console.log(res)
-            this.setState({orders:res , loading:false , masterdata:res , error:''})
-            alert(res.results[0].email)
-            // console.log(res)
-            // console.log(res.order_token)
-            //this.setState({orders:res , loading:false , masterdata:res })
-            // //alert(this.state.orders[0].title)
-            // // alert(res[1].order_token)   
-        })
-        .catch(function(error) {
-        alert('There has been a problem with your fetch operation: ' + error.message);
-        console('There has been a problem with your fetch operation: ' + error.message);
-        // ADD THIS THROW error
-            throw error;
-        });
+              this.setState({terms:res })
+            
+          })
+          .catch(function(error) {
+          alert('There has been a problem with your fetch operation: ' + error.message);
+          console('There has been a problem with your fetch operation: ' + error.message);
+          // ADD THIS THROW error
+              throw error;
+          });
     }
 
   
-
-
-
 
     render(){
-
-        const onToggleSwitch = () => 
-        {   
-            if(this.state.dishstatus == false)
-            {
-                this.setState({dishstatus:true})
-                // alert("Dish Enalbled")
-            }
-            else
-            {
-                this.setState({dishstatus:false})
-                // alert("Dish Disabled")
-            }
-        }
-
-        const onRefresh = () =>
-        {
-            this.setState({order_token:this.props.route.params.order_id})
-            this.business_info()
-            this.setState({processed:this.props.route.params.processed})
-            this.food_items();
-            console.log('refreshed')
-        }
       
-
-        const updateorder = () => {
-            var order_id = this.props.route.params.order_id;
-            var orderstatus = this.state.status_order;
-            if(orderstatus == '')
-            {
-                alert("Please choose a valid Order status")
-            }
-            else
-            {
-            this.setState({loading:true })
+        const login = () => {
+            var mobile = this.state.mobile;
             var dataObj = {}
-            dataObj.order_id = order_id,
-            dataObj.status = orderstatus,
-
-            fetch('https://foody-database.herokuapp.com/api/modify-status',{
-                method: 'POST',
-                header:{
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(dataObj)
-            })
-            .then((response) => response.json())
-            .then((res) => {
-                
-                if (res.is_error == 0)
-                {
-                  alert(res.msg)
-                  this.setState({loading:false })
-                  this.setState({status_order: orderstatus})
-                  onRefresh() 
-                }
-                else
-                {
-                    // this.setState({visible:true})
-                    //alert("Invalid Credentials")
-                    alert(res.msg)
-                    this.setState({loading:false })
-                }
-               
-            })
-            .catch(function(error) {
-              alert('There has been a problem with your fetch operation: ' + error.message);
-               // ADD THIS THROW error
-                throw error;
-              });
-            }
-
+            dataObj.mobile = mobile,
+            this.setState({loading:true })
+           
+            fetch('https://foody-database.herokuapp.com/api/vendorAuth',{
+                    method: 'POST',
+                    header:{
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataObj)
+                })
+                .then((response) => response.json())
+                .then((res) => {
+                    
+                    if (res.is_error == 0)
+                    {
+                      // var vendor_id = res.id;
+                      storeToken(mobile);
+                      this.props.navigation.navigate('Otpscreen');
+                      this.setState({loading:false })
+                      
+                    }
+                    else
+                    {
+                        // this.setState({visible:true})
+                        //alert("Invalid Credentials")
+                        alert(res.msg)
+                        this.setState({loading:false })
+                    }
+                })
+                .catch(function(error) {
+                  console.log('There has been a problem with your fetch operation: ' + error.message);
+                   // ADD THIS THROW error
+                    throw error;
+                  });
+    
             
-        }
+          }
+    
+    
+          const storeToken = async (mobile) => 
+          {
+            try 
+              {
+                 await AsyncStorage.setItem("mobile", mobile);
+              } 
+              catch (error) 
+              {
+                console.log("Something went wrong", error);
+              }
+          }
+    
+          const getData = async () => {
+            try {
+              const value = await AsyncStorage.getItem('mobile')
+              alert(value)
+            } catch(e) {
+              // error reading value
+            }
+          }
+    
+          const onDismissSnackBar = () =>
+          {
+            this.setState({visible:false})
+          }
+    
+          const showModal = () =>
+          {
+              this.setState({modalvisible:true})
+          }
+  
+          const hideModal = () =>
+          {
+              this.setState({modalvisible:false})
+              this.setState({modalhide:true})
+          }
+    
         
         return(
-            <View style={styles.laycontainer}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff"/>
-         
-          <View>
-              <Text style={styles.cartheading}>Your Inventory</Text>
-          </View>
-     
-     
-         <ScrollView>
-     
-             <View style={styles.foodview}>
-                 <View style={{flex: 1}}>
-                     <View style={styles.imagediv}>
-                         <Image style={styles.foodimage} source={require('../assets/images/food.jpg')} />
-                     </View>
-                 </View>
-                 <View style={{flex: 2}}>
-                     <Text style={styles.headingtext}>Double Cheese Margherita Pizza</Text>
-                     <Text style={styles.captionprice}>RS.110</Text>
-                 </View>
-                 <View style={{flex: 1}}>
-                    <Switch value={this.state.dishstatus} color="#040468" onValueChange={onToggleSwitch}  />
-                 </View>  
-             </View>  
-             
-             <Divider></Divider>
-     
-          
-         </ScrollView>
-     
-        
+            <View style={styles.container}>
+            <StatusBar backgroundColor={'#040468'} barStyle="light-content" ></StatusBar>   
+
+            <View style={styles.topview}>
+              <Headline style={styles.headers}>Welcome to Saucetra</Headline>
+              <Title style={styles.title}>Sign in to continue !</Title>
+            </View>
+
+            <View style={styles.formview}>
+              <TextInput keyboardType={'numeric'} style={styles.inputs} label="Mobile No" onChangeText={(value) => this.setState({mobile: value})}  mode="outlined" />
+              <Button style={styles.buttons} mode="contained" loading={this.state.loading} onPress={login } >Login</Button>
+            </View>
+
             
-     
-         </View>
+
+            <Snackbar
+              visible={this.state.visible}
+              onDismiss={onDismissSnackBar}
+              action={{
+                label: 'OK',
+                onPress: () => {
+                  this.setState({visible:false})
+                },
+              }}
+            >
+              Invalid Credentials , Please try again
+            </Snackbar>
+
+            {/* <Button  mode="contained" onPress={() => this.props.navigation.navigate('Home') }>Orders</Button> */}
+
+
+
+         
+
+              <View style={styles.footerview}>
+                <Text onPress={showModal} style={styles.footertext}>Terms & Conditions</Text>
+              </View>
+
+              <Provider style={styles.providerstyle}>
+                    <Portal>
+                        <Modal visible={this.state.modalvisible} onDismiss={hideModal} contentContainerStyle={styles.containerStyle}>
+                            <ScrollView>
+                            {
+                             this.state.terms.map((item,index) => (
+                               <View key={ index }>
+                                  <Text style={styles.textterms}>
+                                    {item.terms}
+                                  </Text>
+                                  <Divider />
+                                </View> 
+                                ))
+                             }
+                            </ScrollView>
+                            
+                        </Modal>
+                    </Portal>
+                 
+                </Provider>
+              
+          </View>
+
         )
+
     }
+
 }
 
 
-const styles ={
-    laycontainer: {
-       
-        height:'100%',
+const styles = 
+{
+    container:{
+        flex:1,
+        backgroundColor: '#040468',
     },
-
-    imagview:
-    {
-        position:'relative',
-    },
-    headingtext: {
-       
-        fontSize:17,
-        color:'#12074c',
-        paddingLeft:7,
-        alignItems:'center',
-        justifyContent:'center',
-        fontFamily:'Karla-SemiBold'
-      },
-      cartheading: {
-        fontSize:24,
-        color:'#12074c',
-        textAlign:'center',
-        fontFamily:'Karla-SemiBold',
-        margin:10
-      },
-      captionprice:
-      {
-        color:'#aa1116',
-        paddingLeft:7,
-        fontFamily:'Karla-SemiBold'
-      },
-      caption:{
-        color:'#7a7a7a',
-        paddingLeft:7,
-        fontFamily:'Montserrat-Medium'
-        
-      }  ,
-      captiontxt: {
-        color:'#12074c',
-        fontSize:13,
-        
-      },  
-    images:{
-      width: '100%',
-      height:350,
-      top:0,
-      left:0,
-      
-    },
-    captiontxt: {
-        color:'#fff',
-        padding:10,
-        fontFamily:'Karla-SemiBold'
-      },
+    txtterms: {
+      margin:10,
     
-    overlaydiv: {
-        position:'absolute',
-        width:'100%',
-        height:350,
-        top:0,
-        left:0,
-        backgroundColor:'black',
-        opacity:0.45,
-    },
-    overlaytxt:
-    {
-        position:'absolute',
-        width:'100%',
-        bottom:50,
-        padding:10
-    },  
-    headingtextwhite:
-    {
-        color:'#fff',
-        fontSize:28,
-        fontFamily:'Karla-Bold'
-    },
-    foodview: {
-        flex: 1,
-        flexDirection:'row',
-        padding:10,
-        margin:5,
-        
-    },
-    imagediv:
-    {
-        width:'90%'
-    },
-    foodimage:
-    {
-        width: '100%',
-        height: undefined,
-        aspectRatio: 1,
-        borderRadius:4,
-    },
-    flxstyle:
-    {
-        flex: 1,
-        flexDirection:'row',
-        padding:10,
-    },
-    divtxt: {
-        color:'white',
-        fontSize:17,
-        fontFamily:'Karla-SemiBold'
-    },
-    fab: {
-        position: 'absolute',
-        margin: 16,
-        right: 0,
-        bottom: 0,
-        backgroundColor:'#e93c42',
-        padding:5
-      },
-      buttonview: {
-          margin:15
-      }
-  
-}
+  },
+  providerstyle: {
+    backgroundColor:'#fff',
+  },
+  textterms: {
+      fontSize:16,
+      marginTop:6,
+      marginBottom:6,
 
-export default Inventory;
+  },
+  containerStyle: {
+      backgroundColor: 'white', 
+      padding:20,
+      margin:20,
+      height:500
+  },
+    topview:{
+      flex:2,
+      paddingTop:40,
+      backgroundColor:'#040468',
+      padding:10
+
+    },
+    formview:{
+      flex:5,
+      backgroundColor:'#FFF',
+      padding:10,
+      borderTopLeftRadius: 30,
+      borderTopRightRadius: 30,
+      paddingTop:50
+    },
+    footerview:{
+      backgroundColor:'#FFF',
+      paddingBottom:20
+    },
+    footertext:{
+      fontFamily: 'Nunito-Regular',
+      textAlign:'center',
+      letterSpacing:2
+    },
+    inputs:{
+      marginTop:10,
+      height:50
+    },
+    buttons:{
+      padding:5,
+      marginTop:10,
+      fontFamily: 'Nunito-Regular',
+      backgroundColor:'#040468'
+    },
+    footer: {
+        flex: 1,
+    },
+    textstyles:{
+      textAlign:'center',
+    },
+    headers:{
+      color:'#FFF',
+      fontSize:30,
+      fontFamily: 'Nunito-Regular',
+      letterSpacing:1
+    },
+    title:{
+      color:'#FFF',
+      fontFamily: 'Nunito-Regular',
+      letterSpacing:1
+    }
+
+
+};
+
+
+export default Login;
